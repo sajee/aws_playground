@@ -20,11 +20,13 @@ for instance in instances:
     for volume in instance.volumes.all():
         print("Volume ID: %s" % (volume.id))
         snapshot_taken =  False
-        collection  = volume.snapshots.all()
+
         for snapshot in volume.snapshots.all():
             snapshot_taken = True
             snapshot_date = snapshot.start_time
             print(': Snapshot:' + snapshot.id+ "  " + str(snapshot_date), end = '')
+            # FIX: datatime.now doesn't have TZ info which causes an error when compared to snapshot date.
+            # Removed timezone foe now.  Need to fix.
             snapshot_older_than_a_day = snapshot_date.replace(tzinfo=None) < datetime.now() - timedelta(days=1)
             if snapshot_older_than_a_day:
                 print("\t*** WARNING: This snapshot is out of date.")
