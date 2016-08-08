@@ -8,13 +8,15 @@ from datetime import datetime, timedelta
 
 ec2 = boto3.resource('ec2')
 
-instance_name_tag = 'Name'
+INSTANCE_NAME_TAG = 'Name'
+SNAPSHOT_AGE_IN_HOURS = 24
+
 instances = ec2.instances.all() # .filter(Filters=[{'Name': 'instance-state-name', 'Values': ['running']}])
 for instance in instances:
     instance_name = ''
     for tag in instance.tags:
-        instance_name = tag['Value'] if tag['Key'] == instance_name_tag else None
-    print("\n\nInstance name: '%s' \t Instance ID: %s." %(instance_name, instance.id))
+        instance_name = tag['Value'] if tag['Key'] == INSTANCE_NAME_TAG else None
+    print("\n\nInstance name: '%s' \t Instance ID: %s" %(instance_name, instance.id))
 
     for volume in instance.volumes.all():
         print("Volume ID: %s" % (volume.id))
@@ -26,8 +28,13 @@ for instance in instances:
             print(': Snapshot:' + snapshot.id+ "  " + str(snapshot_date), end = '')
             # FIX: can't compare TZ naive datatime.now to TZ aware snapshot date.
             # Removed timezone from snapshot date for now.  Need to fix because the comparison should be wrong by a few hours.
-            snapshot_older_than_a_day = snapshot_date.replace(tzinfo=None) < datetime.now() - timedelta(days=1)
+            snapshot_older_than_a_day = snapshot_date.replace(tzinfo=None) < datetime.utcnow() - timedelta(hours=SNAPSHOT_AGE_IN_HOURS)
+            snapshot_delta = datetime.utcnow().replace(microsecond=0) - snapshot_date.replace(tzinfo=None).replace(microsecond=0)
+            snapshot_age_msg = str(snapshot_delta) + " since last snapshot."
+
             if snapshot_older_than_a_day:
-                print("\t*** WARNING: This snapshot is out of date.")
+                print("\t*** WARNING: This snapshot is out of date.\t" + snapshot_age_msg)
+            else:
+                print("\t@@@ This snapshot is current.\t\t\t\t" + snapshot_age_msg)
         if not snapshot_taken:
             print(":\t *** WARNING: No snapshots taken for this volume.")
