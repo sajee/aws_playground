@@ -26,8 +26,8 @@ for instance in instances:
             snapshot_taken = True
             snapshot_date = snapshot.start_time
             print(': Snapshot:' + snapshot.id+ "  " + str(snapshot_date), end = '')
-            # FIX: can't compare TZ naive datatime.now to TZ aware snapshot date.
-            # Removed timezone from snapshot date for now.  Need to fix because the comparison should be wrong by a few hours.
+            # Can't compare TZ naive datatime.now to TZ aware snapshot date.
+            # Removed timezone from snapshot timestamp (which is UTC).   Compare against current UTC time.
             snapshot_older_than_a_day = snapshot_date.replace(tzinfo=None) < datetime.utcnow() - timedelta(hours=SNAPSHOT_AGE_IN_HOURS)
             snapshot_delta = datetime.utcnow().replace(microsecond=0) - snapshot_date.replace(tzinfo=None).replace(microsecond=0)
             snapshot_age_msg = str(snapshot_delta) + " since last snapshot."
