@@ -41,28 +41,32 @@ def check_volumes():
         while True:  # in case of an exception, redo volume or snapshot check.  See http://stackoverflow.com/questions/2083987/how-to-retry-after-exception-in-python
             try:
                 for volume in instance.volumes.all():
-                    print("Volume ID: %s" % (volume.id))
+                    print("Volume ID: %s\t" % (volume.id), end = '')
                     snapshot_taken = False
+                    time_since_latest_snapshot = timedelta.max
+                    latest_snapshot = None
 
                     for snapshot in volume.snapshots.all():
                         snapshot_taken = True
                         snapshot_date = snapshot.start_time
-                        print(': Snapshot:' + snapshot.id + "  " + str(snapshot_date), end = '')
-                        # Can't compare TZ naive datatime.now to TZ aware snapshot date.
-                        # Removed timezone from snapshot timestamp (which is UTC).   Compare against current UTC time.
-                        snapshot_out_of_date = snapshot_date.replace(tzinfo=None) < datetime.utcnow() - timedelta(
-                            hours=SNAPSHOT_AGE_IN_HOURS)
-                        snapshot_delta = datetime.utcnow().replace(microsecond=0) - snapshot_date.replace(tzinfo=None).replace(
-                            microsecond=0)
-                        snapshot_age_msg = str(snapshot_delta) + " since last snapshot."
 
-                        if snapshot_out_of_date:
-                            print("\t*** WARNING: This snapshot is out of date.\t" + snapshot_age_msg)
-                        else:
-                            print("\t@@@ This snapshot is current.\t\t\t\t" + snapshot_age_msg)
+                        time_since_snapshot = datetime.utcnow().replace(microsecond=0) - snapshot_date.replace(tzinfo=None).replace(
+                            microsecond=0)
+                        if time_since_snapshot < time_since_latest_snapshot:
+                            time_since_latest_snapshot = time_since_snapshot
+                            latest_snapshot = snapshot
+
+                        snapshot_age_msg = str(time_since_latest_snapshot) + " elapsed since last snapshot."
 
                     if not snapshot_taken:
-                        print(":\t *** WARNING: No snapshots taken for this volume.")
+                        print("\t*** WARNING: No snapshots taken for this volume.")
+                    else:
+                        snapshot_out_of_date = latest_snapshot.start_time.replace(tzinfo=None) < datetime.utcnow() - timedelta(
+                            hours=SNAPSHOT_AGE_IN_HOURS)
+                        if snapshot_out_of_date:
+                            print("\t### WARNING: It's been %s" % snapshot_age_msg)
+                        else:
+                            print("\t@@@ %s is the latest snapshot for this volume and it's current. " %  latest_snapshot.id, snapshot_age_msg)
 
             except botocore.exceptions.ClientError as e:
                 if e.response['Error']['Code'] == 'RequestLimitExceeded':
