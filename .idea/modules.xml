@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$USER_HOME$/PycharmProjects/AWS/.idea/AWS.iml" filepath="$USER_HOME$/PycharmProjects/AWS/.idea/AWS.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/AWS.iml" filepath="$PROJECT_DIR$/.idea/AWS.iml" />
+      <module fileurl="file://$USER_HOME$/Documents/aws/code/.idea/code.iml" filepath="$USER_HOME$/Documents/aws/code/.idea/code.iml" />
     </modules>
   </component>
 </project>
