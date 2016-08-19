@@ -40,7 +40,7 @@ def report_by_volumes():
                     instance_id = volume['Attachments'][0]['InstanceId'] if volume['Attachments'] else 'Unattached'
                     volume_id = volume['VolumeId']
                     print('\n%s attached to %s\t\t\t' % (volume_id, instance_id), end='')
-                    snapshots = ec2.describe_snapshots(Filters=[{'Name': 'volume-id', 'Values': [volume_id]}])
+                    snapshots = ec2.describe_snapshots(OwnerIds=['self'], Filters=[{'Name': 'volume-id', 'Values': [volume_id]}])
                     if not snapshots['Snapshots']:
                         snapshot_taken = False
                     else:
