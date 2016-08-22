@@ -34,19 +34,20 @@ def report_by_volumes():
     while True:  # in case of an exception, redo volume or snapshot check.  See http://stackoverflow.com/questions/2083987/how-to-retry-after-exception-in-python
         try:
             volumes_paginator = ec2.get_paginator('describe_volumes')
+            snapshots_paginator = ec2.get_paginator('describe_snapshots')
+
             for page in volumes_paginator.paginate():
                 for volume in page['Volumes']:
                     time_since_latest_snapshot = timedelta.max
                     instance_id = volume['Attachments'][0]['InstanceId'] if volume['Attachments'] else 'Unattached'
                     volume_id = volume['VolumeId']
-                    print('\n%s attached to %s\t\t\t' % (volume_id, instance_id), end='')
-                    snapshots = ec2.describe_snapshots(OwnerIds=['self'], Filters=[{'Name': 'volume-id', 'Values': [volume_id]}])
-                    if not snapshots['Snapshots']:
-                        snapshot_taken = False
-                    else:
-                        snapshot_taken = True
-                        snapshots = snapshots['Snapshots']
-                        for snapshot in snapshots:
+                    print('%s attached to %s\t\t\t' % (volume_id, instance_id), end='')
+                    snapshots_iterator = snapshots_paginator.paginate(OwnerIds=['self'], Filters=[{'Name': 'volume-id', 'Values': [volume_id]}])
+                    snapshot_taken = False
+
+                    for snapshots in snapshots_iterator:
+                        for snapshot in snapshots['Snapshots']:
+                            snapshot_taken = True
                             snapshot_date = snapshot['StartTime']
                             time_since_snapshot = datetime.utcnow().replace(microsecond=0) - snapshot_date.replace(
                                 tzinfo=None).replace(microsecond=0)
@@ -54,7 +55,7 @@ def report_by_volumes():
                                 time_since_latest_snapshot = time_since_snapshot
                                 latest_snapshot = snapshot
 
-                            snapshot_age_msg = str(time_since_latest_snapshot) + " elapsed since last snapshot."
+                            snapshot_age_msg = str(time_since_latest_snapshot) + " elapsed since last snapshot %s." % (snapshot['SnapshotId'])
 
                     if not snapshot_taken:
                         print("\t*** WARNING: No snapshots taken for this volume.")
