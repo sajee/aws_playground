@@ -81,31 +81,6 @@ def report_by_volumes():
         break
 
 
-
-
-
-
-def report_by_instances():
-    ec2 = boto3.client('ec2')
-    instances_volumes = []
-
-    instances_paginator = ec2.get_paginator('describe_instances')
-    for page in instances_paginator.paginate():
-        for instance in page['Reservations']:
-            instance = instance['Instances']
-            tags = instance[0]['Tags']
-            bdms = instance[0]['BlockDeviceMappings']
-            volume_ids = [bdm['Ebs']['VolumeId'] for bdm in bdms]
-            name_tag = next(tag for tag in tags if tag["Key"] == "Name") # http://stackoverflow.com/questions/8653516/python-list-of-dictionaries-search
-            print(instance[0]['InstanceId'], name_tag['Value'])
-            instances_volumes.append({instance[0]['InstanceId'] : volume_ids})
-
-
-    volumes_paginator = ec2.get_paginator('describe_volumes')
-    for page in volumes_paginator.paginate():
-        break
-
-
 def check_volumes():
     ec2 = boto3.resource('ec2')
 
