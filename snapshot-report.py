@@ -34,15 +34,20 @@ def instances_and_volumes():
 
     while True:  # in case of an exception, redo volume or snapshot check.  See http://stackoverflow.com/questions/2083987/how-to-retry-after-exception-in-python
         try:
-            instances_paginator = ec2.get_paginator('describe_instances')
-            volumes_paginator = ec2.get_paginator('describe_volumes')
 
-            for instances_page in instances_paginator.paginate():
-                for instance in instances_page['Reservations']:
-                    for i in instance['Instances']:
-                        print('\n%s' %i['InstanceId'], end='')
-                        for bdm in i['BlockDeviceMappings']:
-                            print(', %s ' %bdm['Ebs']['VolumeId'], end='')
+            regions = ec2.describe_regions()
+            for region in regions['Regions']:
+                region_name = region['RegionName']
+                ec2 =  boto3.client('ec2', region_name=region_name)
+                instances_paginator = ec2.get_paginator('describe_instances')
+                #volumes_paginator = ec2.get_paginator('describe_volumes')
+
+                for instances_page in instances_paginator.paginate():
+                    for instance in instances_page['Reservations']:
+                        for i in instance['Instances']:
+                            print('\n%s,%s' %(region_name, i['InstanceId']), end='')
+                            for bdm in i['BlockDeviceMappings']:
+                                print(', %s ' %bdm['Ebs']['VolumeId'], end='')
 
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'RequestLimitExceeded':
@@ -52,6 +57,8 @@ def instances_and_volumes():
                 print("%%%%%%%%%%%%%%%%%%%% Unexpected error: %s" % e)
             continue
         break
+
+
 
 def report_by_volumes():
     ec2 = boto3.client('ec2')
