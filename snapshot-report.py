@@ -164,6 +164,11 @@ def check_volumes():
             break
 
 
-instances_and_volumes()
-#report_by_volumes()
-#check_volumes()
+def main():
+    instances_and_volumes()
+    #report_by_volumes()
+    #check_volumes()
+
+if __name__ == "__main__":
+    # execute only if run as a script
+    main()
