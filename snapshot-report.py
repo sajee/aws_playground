@@ -28,6 +28,38 @@ INSTANCE_NAME_TAG = 'Name'
 SNAPSHOT_AGE_IN_HOURS = 24
 SLEEP_IN_SECONDS = 5
 
+
+def instances_and_volumes():
+    ec2 = boto3.client('ec2')
+
+    while True:  # in case of an exception, redo volume or snapshot check.  See http://stackoverflow.com/questions/2083987/how-to-retry-after-exception-in-python
+        try:
+
+            regions = ec2.describe_regions()
+            for region in regions['Regions']:
+                region_name = region['RegionName']
+                ec2 =  boto3.client('ec2', region_name=region_name)
+                instances_paginator = ec2.get_paginator('describe_instances')
+                #volumes_paginator = ec2.get_paginator('describe_volumes')
+
+                for instances_page in instances_paginator.paginate():
+                    for instance in instances_page['Reservations']:
+                        for i in instance['Instances']:
+                            print('\n%s,%s' %(region_name, i['InstanceId']), end='')
+                            for bdm in i['BlockDeviceMappings']:
+                                print(', %s ' %bdm['Ebs']['VolumeId'], end='')
+
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == 'RequestLimitExceeded':
+                print("^^^^^^^^^^   REQUEST LIMIT EXCEEDED ^^^^^^^^^^^^^: %s" % e)
+                time.sleep(SLEEP_IN_SECONDS)  # boto's built-in exponential backoff expired so just sleep
+            else:
+                print("%%%%%%%%%%%%%%%%%%%% Unexpected error: %s" % e)
+            continue
+        break
+
+
+
 def report_by_volumes():
     ec2 = boto3.client('ec2')
 
@@ -132,6 +164,11 @@ def check_volumes():
             break
 
 
-report_by_volumes()
-#paginate()
-#check_volumes()
+def main():
+    instances_and_volumes()
+    #report_by_volumes()
+    #check_volumes()
+
+if __name__ == "__main__":
+    # execute only if run as a script
+    main()
