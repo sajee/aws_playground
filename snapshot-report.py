@@ -63,8 +63,8 @@ def report_by_volumes(region_name):
                 for volume in page['Volumes']:
                     time_since_latest_snapshot = timedelta.max
                     instance_id = volume['Attachments'][0]['InstanceId'] if volume['Attachments'] else 'Unattached'
-                    volume_id = volume['VolumeId']
-                    print('%s attached to %s\t\t\t' % (volume_id, instance_id), end='')
+                    volume_id, az = volume['VolumeId'], volume['AvailabilityZone']
+                    print('%s attached to %s in %s\t\t\t' % (volume_id, instance_id, az), end='')
                     snapshots_iterator = snapshots_paginator.paginate(OwnerIds=['self'], Filters=[{'Name': 'volume-id', 'Values': [volume_id]}])
                     snapshot_taken = False
 
